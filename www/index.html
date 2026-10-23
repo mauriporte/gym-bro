@@ -131,11 +131,38 @@ dialog::backdrop{background:rgb(0 0 0 / .78)}
 .target b{font:500 26px/1 var(--display)}
 .cues{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
 .x{position:absolute;right:14px;top:14px;border:1px solid var(--line);background:var(--surface);width:36px;height:36px;border-radius:50%;font-size:18px;line-height:1;color:var(--muted)}
+/* setup + extras */
+#onboard{min-height:100dvh;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));padding-block:20px 32px}
+.ob{max-width:620px;margin:0 auto;min-height:calc(100dvh - 52px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:28px}
+.ob-top{display:flex;justify-content:space-between;align-items:center;min-height:20px}
+.ob-dots{display:flex;gap:6px}.ob-dots i{width:18px;height:2px;background:var(--line)}.ob-dots i.on{background:var(--ink)}
+.ob-body{flex:1;display:flex;flex-direction:column;gap:18px}
+.ob-logo{font-size:52px;gap:16px;margin-top:12vh}.ob-logo svg{width:52px;height:52px}
+.lead{font-size:19px;line-height:1.5;color:var(--muted);max-width:40ch}
+.ob-nav{display:flex;justify-content:space-between;gap:12px}
+.ob-nav .btn{padding:13px 26px;font-size:14px}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.kg{display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:var(--muted);font-size:13px}
+.kg input{width:84px;padding:6px 10px;font-variant-numeric:tabular-nums}
+.hint{color:var(--ink);opacity:.8;margin-top:2px}
+.vid{width:100%;max-width:100%;border-radius:10px;background:var(--bg);display:block;aspect-ratio:16/10;object-fit:contain}
+textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;resize:vertical;text-transform:none;letter-spacing:0;font-size:15px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted)}
+.check input{accent-color:var(--ink);width:18px;height:18px;margin-top:2px}
+label.btn{display:inline-flex;align-items:center;cursor:pointer}
+.mode-ico svg{width:26px;height:26px;margin-bottom:6px}
+.adj{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:2px}
+.step{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px}
+.step button{border:0;background:none;color:var(--ink);width:32px;height:30px;font-size:16px;line-height:1}
+.target .step b,.step b{font:600 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding-inline:2px}
+@media (max-width:420px){.logo{font-size:22px;gap:8px}.logo svg{width:24px;height:24px}.controls{gap:6px}.seg button{min-width:32px;padding:0 7px}.seg svg{width:18px;height:18px}}
+.adj .reset{border:0;background:none;color:var(--muted);text-decoration:underline;text-underline-offset:3px;font-size:12px;padding:4px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
+<section id="onboard" hidden></section>
+<div class="wrap" hidden>
 <header>
   <div class="bar">
     <div class="logo">
@@ -147,6 +174,7 @@ dialog::backdrop{background:rgb(0 0 0 / .78)}
       <div class="seg" role="group" id="mode-seg">
         <button data-mode="gym" id="m-gym"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg></button>
         <button data-mode="home" id="m-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/></svg></button>
+        <button data-mode="cali" id="m-cali"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18"/><circle cx="12" cy="9.5" r="1.8"/><path d="M8.5 4l2.6 4.2M15.5 4l-2.6 4.2M12 11.3v4.7M12 16l-2.6 4.5M12 16l2.6 4.5"/></svg></button>
       </div>
     </div>
   </div>
@@ -161,7 +189,7 @@ dialog::backdrop{background:rgb(0 0 0 / .78)}
 <main>
   <section role="tabpanel" id="v-today" aria-labelledby="t-today"></section>
   <section role="tabpanel" id="v-lib" aria-labelledby="t-lib" hidden>
-    <div class="toolbar"><input id="q" type="search"><select id="muscle"></select></div>
+    <div class="toolbar"><input id="q" type="search"><select id="muscle"></select><button class="btn" id="add-btn" data-add></button></div>
     <div class="grid" id="lib"></div>
   </section>
   <section role="tabpanel" id="v-plan" aria-labelledby="t-plan" hidden></section>
@@ -174,12 +202,16 @@ dialog::backdrop{background:rgb(0 0 0 / .78)}
   <div class="dlg">
     <button class="x" id="d-close">×</button>
     <div><div class="eyebrow" id="d-muscles"></div><h2 id="d-name"></h2></div>
-    <div class="stage"><canvas id="d-canvas"></canvas><div class="hud" id="d-hud"></div><div class="prog"><i id="d-prog"></i></div></div>
+    <div class="stage"><canvas id="d-canvas"></canvas><video id="d-video" class="vid" hidden muted playsinline loop></video><div class="hud" id="d-hud"></div><div class="prog"><i id="d-prog"></i></div></div>
     <div class="seg" role="group" id="views" style="align-self:flex-start"><button data-view="auto"></button><button data-view="90"></button><button data-view="40">45°</button><button data-view="0"></button></div>
+    <p class="rx" id="d-note"></p>
     <div class="target" id="d-target"></div>
     <ol class="cues" id="d-cues"></ol>
+    <button class="btn" id="d-remove" hidden style="align-self:flex-start"></button>
   </div>
 </dialog>
+
+<dialog id="add" aria-label="Add exercise"></dialog>
 
 <script src="data.js"></script>
 <script src="app.js"></script>
