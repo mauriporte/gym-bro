@@ -1,0 +1,59 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: npm ci
+      - run: npx cap sync android
+      - name: Build signed release APK
+        working-directory: android
+        env:
+          KEYSTORE_B64: ${{ secrets.GYMBRO_KEYSTORE_B64 }}
+          GYMBRO_KEYSTORE_PASSWORD: ${{ secrets.GYMBRO_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "::error::GYMBRO_KEYSTORE_B64 secret is missing"; exit 1; }
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/gymbro.p12"
+          GYMBRO_KEYSTORE="$RUNNER_TEMP/gymbro.p12" ./gradlew assembleRelease --no-daemon
+          rm "$RUNNER_TEMP/gymbro.p12"
+      - run: mv android/app/build/outputs/apk/release/app-release.apk GymBro.apk
+      - uses: actions/upload-artifact@v7
+        with:
+          name: GymBro-apk
+          path: GymBro.apk
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: GymBro-apk
+      - name: Publish rolling "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest GymBro.apk --target "$GITHUB_SHA" --title "GymBro (latest build)" \
+            --notes "Build ${GITHUB_RUN_NUMBER} from ${GITHUB_SHA::7}. Download GymBro.apk on your phone and allow installs from your browser. New builds install over the old one and keep your data."

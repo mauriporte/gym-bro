@@ -1,0 +1,12 @@
+{
+  "appId": "io.github.mauriporte.gymbro",
+  "appName": "GymBro",
+  "webDir": "www",
+  "backgroundColor": "#0a0a0a",
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_gymbro",
+      "iconColor": "#f4f1ec"
+    }
+  }
+}
