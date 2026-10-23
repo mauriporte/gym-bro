@@ -1,0 +1,26 @@
+GymBro is a personal trainer and nutritionist in your pocket. No ads, no account, no tracking. Everything stays on your phone.
+
+PLAN
+• Answer a few questions (goal, build, experience, days a week) and get a full training plan.
+• Five trainer profiles: Hardgainer, Cutter, Powerlifter, Recomp and Engine.
+• Train in the gym, at home with dumbbells, or with calisthenics. Switch any time.
+• Every exercise reads "4 sets of 8–12 reps", and you can adjust sets and reps. GymBro remembers.
+
+EXERCISES
+• 30 exercises with 3D demos that turn from side view to 45° to front view.
+• Add your own: describe it or record a short video. GymBro compares it with the exercises it knows, places it in the right muscle group and turns your video into a stick-figure demo.
+
+COACH
+• Log your weights and GymBro suggests next session's load.
+• Rate each session. Based on your last two weeks, the coach suggests a lighter week, fewer days, a level-up or a new block.
+
+NUTRITION
+• Daily calories and macros for training and rest days.
+• Four meals a day with full recipes, scaled to your target.
+• A 7-day grocery list.
+
+TRACKING
+• Check-ins, streaks and a 16-week attendance calendar.
+• A reminder on training days if you haven't checked in. It can check you in automatically at your saved gym.
+
+In English and Spanish.

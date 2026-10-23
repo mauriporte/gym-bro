@@ -32,13 +32,18 @@ jobs:
         run: |
           test -n "$KEYSTORE_B64" || { echo "::error::GYMBRO_KEYSTORE_B64 secret is missing"; exit 1; }
           echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/gymbro.p12"
-          GYMBRO_KEYSTORE="$RUNNER_TEMP/gymbro.p12" ./gradlew assembleRelease --no-daemon
+          GYMBRO_KEYSTORE="$RUNNER_TEMP/gymbro.p12" ./gradlew assembleRelease bundleRelease --no-daemon
           rm "$RUNNER_TEMP/gymbro.p12"
-      - run: mv android/app/build/outputs/apk/release/app-release.apk GymBro.apk
+      # APK for sideloading, AAB (same upload key) for Google Play
+      - run: |
+          mv android/app/build/outputs/apk/release/app-release.apk GymBro.apk
+          mv android/app/build/outputs/bundle/release/app-release.aab GymBro.aab
       - uses: actions/upload-artifact@v7
         with:
           name: GymBro-apk
-          path: GymBro.apk
+          path: |
+            GymBro.apk
+            GymBro.aab
 
   release:
     needs: build
@@ -55,5 +60,5 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest GymBro.apk --target "$GITHUB_SHA" --title "GymBro (latest build)" \
+          gh release create latest GymBro.apk GymBro.aab --target "$GITHUB_SHA" --title "GymBro (latest build)" \
             --notes "Build ${GITHUB_RUN_NUMBER} from ${GITHUB_SHA::7}. Download GymBro.apk on your phone and allow installs from your browser. New builds install over the old one and keep your data."
