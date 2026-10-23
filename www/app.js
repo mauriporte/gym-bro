@@ -21,8 +21,8 @@ const dowName = (d,len="short") => new Date(2024,0,7+d).toLocaleDateString(S.lan
 /* ---------- native bridge (Capacitor) ---------- */
 const Cap = window.Capacitor, NATIVE = !!Cap?.isNativePlatform?.();
 const LN = NATIVE ? Cap.Plugins.LocalNotifications : null, GEO = NATIVE ? Cap.Plugins.Geolocation : null;
-async function getPosition(){
-  if(GEO){ await GEO.requestPermissions(); const p=await GEO.getCurrentPosition({enableHighAccuracy:true,timeout:15000}); return p.coords; }
+async function getPosition(ask){
+  if(GEO){ const st=(ask?await GEO.requestPermissions():await GEO.checkPermissions()).location; if(st!=="granted") throw new Error("denied"); const p=await GEO.getCurrentPosition({enableHighAccuracy:true,timeout:15000}); return p.coords; }
   if(!navigator.geolocation) throw new Error("unsupported");
   return new Promise((ok,no)=>navigator.geolocation.getCurrentPosition(p=>ok(p.coords),no,{enableHighAccuracy:true,timeout:15000}));
 }
@@ -498,7 +498,7 @@ async function renderProg(){
   };
   v.querySelector("#setgym").onclick=async()=>{
     st(tr(STR.locFinding));
-    try{ const c=await getPosition(); S.gym={lat:c.latitude,lon:c.longitude}; save(); await renderProg(); $("#pstatus").textContent=tr(STR.locSaved); }
+    try{ const c=await getPosition(true); S.gym={lat:c.latitude,lon:c.longitude}; save(); await renderProg(); $("#pstatus").textContent=tr(STR.locSaved); }
     catch(e){ st(tr(e?.message==="unsupported"?STR.locNone:STR.locBlocked)); }
   };
   v.querySelector("#testn").onclick=async()=>st(tr(await notify(true)?STR.testSent:STR.nBlocked));
@@ -713,8 +713,8 @@ function readObForm(){
 async function obNav(dir){
   readObForm(); save();
   if(dir>0&&obStep===OB_STEPS.length-1){
-    Object.assign(S,{onboarded:true,planStart:today(),tab:"today"}); save(); showApp(); renderAll();
-    try{ if((await notifyPermission(true))==="granted") scheduleReminders(); }catch{}
+    // no permission prompts here: reminders and location are switched on from Progress, the camera only when recording
+    Object.assign(S,{onboarded:true,planStart:today(),tab:"today"}); save(); showApp(); renderAll(); scheduleReminders();
     return;
   }
   obStep=Math.max(0,Math.min(OB_STEPS.length-1,obStep+dir)); renderOnboard();
