@@ -325,7 +325,7 @@ const GOAL_DESC = {
 const ROTATE = {muscle:"strength",strength:"muscle",fatloss:"tone",tone:"muscle",endurance:"fatloss"};
 Object.assign(STR, {
   addExercise:["+ Add exercise","+ Añadir ejercicio"], addTitle:["Add an exercise","Añadir un ejercicio"],
-  addIntro:["Describe it, record a short video of one or two reps, or both. GymBro compares it with the exercises it knows to place it in the right muscle group.","Descríbelo, graba un vídeo corto de una o dos repeticiones, o ambas cosas. GymBro lo compara con los ejercicios que conoce para ubicarlo en el grupo muscular correcto."],
+  addIntro:["Describe it, record a short video of one or two reps, or both. GymBro compares it with the exercises it knows to place it in the right muscle group. A video is turned into a stick-figure demo, and the video itself isn't kept.","Descríbelo, graba un vídeo corto de una o dos repeticiones, o ambas cosas. GymBro lo compara con los ejercicios que conoce para ubicarlo en el grupo muscular correcto. El vídeo se convierte en una demo de figuras de palitos y no se guarda."],
   addName:["Name","Nombre"], addDesc:["How it's done","Cómo se hace"], addDescPh:["e.g. Cable fly: stand between two pulleys and bring the handles together in front of your chest.","p. ej. Aperturas en polea: de pie entre dos poleas, junta los agarres delante del pecho."],
   addRecord:["Record video","Grabar vídeo"], addPick:["Choose video","Elegir vídeo"], addCompare:["Compare with known exercises","Comparar con ejercicios conocidos"],
   addGroup:["Movement","Movimiento"], addLike:["Closest known exercise","Ejercicio conocido más parecido"], addWhere:["Where","Dónde"], addBoth:["Gym and home","Gimnasio y casa"], addType:["Measured in","Se mide en"],
@@ -337,8 +337,8 @@ Object.assign(STR, {
   addOffline:["Video analysis needs an internet connection the first time. Matched from the text instead.","El análisis de vídeo necesita conexión la primera vez. Se ha comparado con el texto."],
   addNoMatch:["No close match yet. Add a few more words, or pick the movement yourself below.","Aún no hay coincidencia. Añade más detalles o elige el movimiento abajo."],
   addResult:["Closest from your description: {x}. Movement: {g}.","Más parecido según tu descripción: {x}. Movimiento: {g}."],
-  addResultVideo:["Closest from your video: {x}. Movement: {g}.","Más parecido según tu vídeo: {x}. Movimiento: {g}."],
-  addNeedName:["Give the exercise a name.","Ponle un nombre al ejercicio."], addVideoFail:["Couldn't store the video on this device. Try a shorter clip.","No se pudo guardar el vídeo en este dispositivo. Prueba con un clip más corto."],
+  addResultVideo:["Closest from your video: {x}. Movement: {g}. Your movement is now a stick-figure demo.","Más parecido según tu vídeo: {x}. Movimiento: {g}. Tu movimiento ya es una demo de figuras de palitos."],
+  addNeedName:["Give the exercise a name.","Ponle un nombre al ejercicio."], 
   likeNote:["Your exercise. The animation shows the closest known movement: {x}.","Tu ejercicio. La animación muestra el movimiento conocido más parecido: {x}."],
   removeEx:["Remove exercise","Eliminar ejercicio"], yours:["Yours","Tuyo"],
 });
@@ -356,3 +356,4 @@ Object.assign(STR, {
   fewerSets:["One set fewer","Una serie menos"], moreSets:["One more set","Una serie más"],
   fewerReps:["Fewer reps","Menos repeticiones"], moreRepsBtn:["More reps","Más repeticiones"], resetAdj:["Reset to plan","Volver al plan"],
 });
+Object.assign(STR,{motionNote:["Your exercise, animated from your video.","Tu ejercicio, animado a partir de tu vídeo."]});

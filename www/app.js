@@ -204,9 +204,10 @@ function fullPose(ex,key){
 }
 function lerpPose(ex,f){ const [A,B]=ex._K, o={}; for(const k in A) o[k]=A[k]+(B[k]-A[k])*f; return o; }
 function prep(ex){
-  if(ex._K) return; ex._K=ex.keys.map(k=>fullPose(ex,k));
+  if(ex._K) return; ex._K=ex.motion?true:ex.keys.map(k=>fullPose(ex,k));
   // sample the loop once to frame the camera
-  const pts=[]; for(let i=0;i<=16;i++){ const J=fk(ex,lerpPose(ex,i/16)); pts.push(...Object.values(J),...equipPts(ex,J)); }
+  const pts=[], frames=ex.motion?ex.motion.map((_,i)=>motionAt(ex,i*MOTION_DT)):Array.from({length:17},(_,i)=>fk(ex,lerpPose(ex,i/16)));
+  for(const J of frames) pts.push(...Object.values(J),...equipPts(ex,J));
   const cx=pts.reduce((s,p)=>s+p[0],0)/pts.length, cz=pts.reduce((s,p)=>s+p[2],0)/pts.length;
   ex._f={cx,cz,R:Math.max(...pts.map(p=>Math.hypot(p[0]-cx,p[2]-cz)))+.12,ymin:Math.min(0,...pts.map(p=>p[1])),ymax:Math.max(...pts.map(p=>p[1]))+.14};
 }
@@ -255,7 +256,7 @@ function draw(cv,ex,time,yaw){
   const dpr=Math.min(2,devicePixelRatio||1), Wd=cv.clientWidth, H=cv.clientHeight; if(!Wd) return;
   if(cv.width!==Math.round(Wd*dpr)){ cv.width=Math.round(Wd*dpr); cv.height=Math.round(H*dpr); }
   const g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,Wd,H);
-  const f=ex._f, ph=(time%ex.rep)/ex.rep, J=fk(ex,lerpPose(ex,(1-Math.cos(2*Math.PI*ph))/2));
+  const f=ex._f, ph=(time%ex.rep)/ex.rep, J=ex.motion?motionAt(ex,time):fk(ex,lerpPose(ex,(1-Math.cos(2*Math.PI*ph))/2));
   const sc=Math.min(Wd*.9/(2*f.R),H*.86/(f.ymax-f.ymin)), sy=Math.sin(yaw*D), cy=Math.cos(yaw*D), base=H*.93;
   const pr=p=>[Wd/2+((p[0]-f.cx)*cy-(p[2]-f.cz)*sy)*sc, base-(p[1]-f.ymin)*sc, (p[0]-f.cx)*sy+(p[2]-f.cz)*cy];
   const floorY=base+f.ymin*sc;
@@ -297,7 +298,7 @@ function loop(ts){
   if(frame++%60===0) readColors();
   const time=reduce.matches?0:ts/1000;
   for(const [cv,v] of live){ if(!cv.isConnected){ live.delete(cv); io.unobserve(cv); continue; } if(v.on) draw(cv,v.ex,time,40); }
-  if(modal&&!modal.ex.hasVideo){
+  if(modal){
     const mt=(ts-modal.t0)/1000, a=modal.view==="auto"?autoYaw(mt):{yaw:+modal.view,view:+modal.view};
     draw(modal.cv,modal.ex,mt,a.yaw);
     $("#d-hud").textContent=tr(STR.views[a.view])+" · 0:"+String(Math.floor(mt%10)).padStart(2,"0")+" / 0:10";
@@ -569,35 +570,54 @@ async function matchVideo(blob,onProgress){
   vid.muted=true; vid.playsInline=true; vid.src=url;
   try{
     await new Promise((ok,no)=>{ vid.onloadeddata=ok; vid.onerror=()=>no(new Error("video")); });
-    const end=Math.min(vid.duration||0,15), frames=[], IDX={shL:11,shR:12,elL:13,elR:14,hdL:15,hdR:16,hpL:23,hpR:24,knL:25,knR:26,ftL:27,ftR:28};
-    for(let tm=.05,n=0;tm<end;tm+=.2,n++){
+    const end=Math.min(vid.duration||0,15), frames=[];
+    for(let tm=.05,n=0;tm<end;tm+=MOTION_DT,n++){
       vid.currentTime=tm; await new Promise(ok=>vid.onseeked=ok);
-      const w=lm.detectForVideo(vid,n*200+1).worldLandmarks?.[0]; onProgress?.(tm/end);
-      if(w) frames.push(Object.fromEntries(Object.entries(IDX).map(([k,i])=>[k,[w[i].x,-w[i].y,w[i].z]])));
+      const w=lm.detectForVideo(vid,Math.round(n*MOTION_DT*1000)+1).worldLandmarks?.[0]; onProgress?.(tm/end);
+      if(w) frames.push(rigFromLandmarks(w));
     }
     if(frames.length<5) throw new Error("nopose");
     const f=poseFeatures(frames);
-    return EX.filter(x=>!x.custom).map(x=>({x,d:featDist(f,knownFeatures(x))})).sort((a,b)=>a.d-b.d).slice(0,3).map(m=>m.x);
+    return {matches:EX.filter(x=>!x.custom).map(x=>({x,d:featDist(f,knownFeatures(x))})).sort((a,b)=>a.d-b.d).slice(0,3).map(m=>m.x), motion:toMotion(frames)};
   } finally { URL.revokeObjectURL(url); }
 }
-// videos live in IndexedDB; exercise metadata lives in S.custom
-const idb=()=>new Promise((ok,no)=>{ const r=indexedDB.open("gymbro",1); r.onupgradeneeded=()=>r.result.createObjectStore("videos"); r.onsuccess=()=>ok(r.result); r.onerror=()=>no(r.error); });
-async function vidOp(mode,fn){ const db=await idb(); return new Promise((ok,no)=>{ const tx=db.transaction("videos",mode), req=fn(tx.objectStore("videos")); tx.oncomplete=()=>ok(req?.result); tx.onerror=()=>no(tx.error); }); }
-const vidPut=(id,blob)=>vidOp("readwrite",s=>s.put(blob,id)), vidGet=id=>vidOp("readonly",s=>s.get(id)), vidDel=id=>vidOp("readwrite",s=>s.delete(id));
+/* video → stick-figure motion: landmarks mapped onto the demo rig, smoothed, turned to face +z and stood on the floor */
+const MOTION_DT=.2, RIG=["head","neck","hip","shL","shR","elL","elR","hdL","hdR","hpL","hpR","knL","knR","ftL","ftR","toeL","toeR"];
+function rigFromLandmarks(w){
+  const p=i=>[w[i].x,-w[i].y,w[i].z], mid=(a,b)=>mul(add(p(a),p(b)),.5); // MediaPipe y points down
+  return {head:mid(7,8),nose:p(0),neck:mid(11,12),hip:mid(23,24),shL:p(11),shR:p(12),elL:p(13),elR:p(14),hdL:p(15),hdR:p(16),
+    hpL:p(23),hpR:p(24),knL:p(25),knR:p(26),ftL:p(27),ftR:p(28),toeL:p(31),toeR:p(32)};
+}
+function toMotion(raw){
+  // facing = nose ahead of the head and toes ahead of the ankles, averaged over the clip
+  let fx=0,fz=0; for(const J of raw){ for(const v of [sub(J.nose,J.head),sub(J.toeL,J.ftL),sub(J.toeR,J.ftR)]){ fx+=v[0]; fz+=v[2]; } }
+  const rot=Math.PI/2-Math.atan2(fz,fx), c=Math.cos(rot), s=Math.sin(rot);
+  const turned=raw.map(J=>Object.fromEntries(RIG.map(k=>{ const [x,y,z]=J[k]; return [k,[x*c-z*s,y,x*s+z*c]]; })));
+  const sm=turned.map((_,i)=>Object.fromEntries(RIG.map(k=>{ const n=[turned[i-1],turned[i],turned[i+1]].filter(Boolean); return [k,[0,1,2].map(a=>n.reduce((t,J)=>t+J[k][a],0)/n.length)]; })));
+  const floor=Math.min(...sm.flatMap(J=>[J.ftL[1],J.ftR[1],J.toeL[1],J.toeR[1]])), cx=sm.reduce((t,J)=>t+J.hip[0],0)/sm.length, cz=sm.reduce((t,J)=>t+J.hip[2],0)/sm.length;
+  return sm.map(J=>RIG.flatMap(k=>[J[k][0]-cx,J[k][1]-floor,J[k][2]-cz].map(v=>Math.round(v*1000)/1000)));
+}
+// plays the recorded frames back and forth so the loop never jumps
+function motionAt(ex,time){
+  const F=ex.motion, n=F.length, span=2*(n-1), p=(time/MOTION_DT)%span, q=p<n-1?p:span-p, i=Math.min(n-2,Math.floor(q)), f=q-i, J={};
+  RIG.forEach((k,j)=>{ J[k]=[0,1,2].map(a=>F[i][j*3+a]+(F[i+1][j*3+a]-F[i][j*3+a])*f); });
+  return J;
+}
 function addCustomToEX(c){
   const like=BYID[c.like]||BYID["plank"], {_K,_f,_feat,...base}=like, g=PAT_GROUP[c.pat];
   const desc=(c.desc||"").split(/(?<=[.!?])\s+|\n+/).map(s=>s.trim()).filter(Boolean);
-  const ex={...base,id:c.id,custom:1,inPlan:c.inPlan,hasVideo:c.hasVideo,like:like.id,name:[c.name,c.name],muscles:STR.muscles[g],mode:c.mode,pat:[c.pat],timed:c.timed?1:0,big:0,cues:desc.length?[desc,desc]:like.cues};
+  const ex={...base,id:c.id,custom:1,inPlan:c.inPlan,like:like.id,name:[c.name,c.name],muscles:STR.muscles[g],mode:c.mode,pat:[c.pat],timed:c.timed?1:0,big:0,cues:desc.length?[desc,desc]:like.cues};
+  if(c.motion?.length>=2) Object.assign(ex,{motion:c.motion,eq:undefined,bar:undefined});
   const i=EX.findIndex(x=>x.id===c.id); if(i>=0) EX[i]=ex; else EX.push(ex);
   BYID[c.id]=ex;
 }
 function removeCustom(id){
   S.custom=S.custom.filter(c=>c.id!==id); const i=EX.findIndex(x=>x.id===id); if(i>=0) EX.splice(i,1); delete BYID[id];
-  vidDel(id).catch(()=>{}); save(); renderAll();
+  save(); renderAll();
 }
 let addState=null;
 function openAdd(){
-  addState={blob:null,matches:[],pat:"core",like:"plank"};
+  addState={blob:null,motion:null,tried:false};
   const dlg=$("#add");
   dlg.innerHTML=`<form class="dlg" id="a-form" novalidate>
     <button class="x" type="button" data-close aria-label="${tr(STR.close)}">×</button>
@@ -620,27 +640,28 @@ function openAdd(){
   </form>`;
   const st=m=>$("#a-status").textContent=m;
   $("#a-pat").value="core"; $("#a-like").value="plank"; $("#a-mode").value=S.mode;
-  const onVideo=e=>{ const f=e.target.files?.[0]; if(!f) return; if(f.size>200e6) return st(tr(STR.addTooBig)); addState.blob=f; const v=$("#a-video"); v.src=URL.createObjectURL(f); v.hidden=false; v.play().catch(()=>{}); st(tr(STR.addVideoReady)); };
+  const onVideo=e=>{ const f=e.target.files?.[0]; if(!f) return; if(f.size>200e6) return st(tr(STR.addTooBig)); Object.assign(addState,{blob:f,motion:null,tried:false}); const v=$("#a-video"); v.src=URL.createObjectURL(f); v.hidden=false; v.play().catch(()=>{}); st(tr(STR.addVideoReady)); };
   $("#a-rec").onchange=onVideo; $("#a-pick").onchange=onVideo;
-  $("#a-compare").onclick=async()=>{
+  const compare=async()=>{
     const txt=$("#a-name").value+" "+$("#a-desc").value, m=matchText(txt);
-    let matches=m.matches, via="text";
+    let matches=m.matches, via="text", warn="";
     if(addState.blob){
-      st(tr(STR.addAnalyzing));
-      try{ matches=await matchVideo(addState.blob,p=>st(tr(STR.addAnalyzing)+" "+Math.round(p*100)+"%")); via="video"; }
-      catch(e){ st(tr(e.message==="nopose"?STR.addNoPose:STR.addOffline)); console.warn("pose",e); }
+      st(tr(STR.addAnalyzing)); addState.tried=true;
+      try{ const r=await matchVideo(addState.blob,p=>st(tr(STR.addAnalyzing)+" "+Math.round(p*100)+"%")); matches=r.matches; addState.motion=r.motion; via="video"; }
+      catch(e){ warn=tr(e.message==="nopose"?STR.addNoPose:STR.addOffline)+" "; console.warn("pose",e); }
     }
-    if(!matches.length&&!m.pat) return st(tr(STR.addNoMatch));
+    if(!matches.length&&!m.pat) return st(warn+tr(STR.addNoMatch));
     const pat=m.pat||matches[0].pat[0];
     $("#a-pat").value=pat; if(matches[0]) $("#a-like").value=matches[0].id; if(m.mode) $("#a-mode").value=m.mode;
     if(matches[0]?.timed) $("#a-type").value="time";
-    st(t(via==="video"?STR.addResultVideo:STR.addResult,{x:matches.map(x=>tr(x.name)).join(", ")||"—",g:tr(PAT_NAME[pat])}));
+    st(warn+t(via==="video"?STR.addResultVideo:STR.addResult,{x:matches.map(x=>tr(x.name)).join(", ")||"—",g:tr(PAT_NAME[pat])}));
   };
+  $("#a-compare").onclick=compare;
   $("#a-form").onsubmit=async e=>{
     e.preventDefault();
     const name=$("#a-name").value.trim(); if(!name) return st(tr(STR.addNeedName));
-    const mode=$("#a-mode").value, c={id:"c-"+Date.now().toString(36),name,desc:$("#a-desc").value.trim(),pat:$("#a-pat").value,like:$("#a-like").value,mode:mode==="all"?[...MODES]:[mode],timed:$("#a-type").value==="time",inPlan:$("#a-inplan").checked,hasVideo:false};
-    if(addState.blob){ try{ await vidPut(c.id,addState.blob); c.hasVideo=true; }catch(err){ return st(tr(STR.addVideoFail)); } }
+    if(addState.blob&&!addState.tried) await compare(); // a video is only kept as the stick-figure motion it converts to
+    const mode=$("#a-mode").value, c={id:"c-"+Date.now().toString(36),name,desc:$("#a-desc").value.trim(),pat:$("#a-pat").value,like:$("#a-like").value,mode:mode==="all"?[...MODES]:[mode],timed:$("#a-type").value==="time",inPlan:$("#a-inplan").checked,motion:addState.motion};
     if(c.inPlan) for(const o of S.custom) if(o.pat===c.pat) o.inPlan=false, addCustomToEX(o); // one custom per movement slot
     S.custom.push(c); addCustomToEX(c); save(); dlg.close(); renderAll(); scheduleReminders();
   };
@@ -720,10 +741,8 @@ function openEx(id){
   $("#d-name").textContent=tr(ex.name); $("#d-muscles").textContent=tr(ex.muscles);
   $("#d-cues").innerHTML=tr(ex.cues).map(c=>`<li>${esc(c)}</li>`).join("");
   renderTarget(ex);
-  $("#d-note").textContent=ex.custom&&!ex.hasVideo?t(STR.likeNote,{x:tr(BYID[ex.like].name)}):"";
+  $("#d-note").textContent=!ex.custom?"":ex.motion?tr(STR.motionNote):t(STR.likeNote,{x:tr(BYID[ex.like].name)});
   $("#d-remove").hidden=!ex.custom; $("#d-remove").textContent=tr(STR.removeEx); $("#d-remove").dataset.id=ex.id;
-  const vid=$("#d-video"); vid.hidden=true; $("#d-hud").textContent=""; $("#d-prog").style.width="0"; $("#d-canvas").hidden=$("#views").hidden=!!ex.hasVideo;
-  if(ex.hasVideo) vidGet(ex.id).then(b=>{ if(!b||modal?.ex!==ex) return; vid.src=URL.createObjectURL(b); vid.hidden=false; vid.play().catch(()=>{}); });
   modal={ex,cv:$("#d-canvas"),view:"auto",t0:performance.now()}; setView("auto");
   $("#dlg").showModal();
   history.pushState({dlg:1},""); // Android back button pops this entry instead of exiting the app
@@ -755,7 +774,7 @@ document.addEventListener("click",e=>{
 });
 $("#d-close").onclick=()=>$("#dlg").close();
 for(const id of ["#dlg","#add"]) $(id).addEventListener("close",()=>{
-  if(id==="#dlg"){ modal=null; const v=$("#d-video"); if(v.src){ v.pause(); URL.revokeObjectURL(v.src); v.removeAttribute("src"); } }
+  if(id==="#dlg") modal=null;
   if(history.state?.dlg) history.back();
 });
 addEventListener("popstate",()=>{ for(const id of ["#dlg","#add"]) if($(id).open) $(id).close(); });
