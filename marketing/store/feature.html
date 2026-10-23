@@ -1,0 +1,37 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>GymBro feature graphic</title>
+<style>
+@font-face{font-family:"Bodoni Moda";font-weight:500;src:url(/www/fonts/bodoni-moda-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Manrope";font-weight:400;src:url(/www/fonts/manrope-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Manrope";font-weight:600;src:url(/www/fonts/manrope-latin-600-normal.woff2) format("woff2")}
+/* Play Store feature graphic: 1024×500, wordmark left, three demo figures right on one floor line */
+html,body{margin:0;background:#0a0a0a}
+.fg{width:1024px;height:500px;position:relative;overflow:hidden;background:#0a0a0a;color:#f4f1ec;font-family:Manrope,sans-serif}
+.copy{position:absolute;left:72px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:18px}
+.mark{display:flex;align-items:center;gap:18px;font:500 92px/1 "Bodoni Moda",Georgia,serif;letter-spacing:.005em}
+.mark svg{width:70px;height:70px}
+.tag{font:400 24px/1.4 Manrope,sans-serif;color:#b9b4ad;max-width:20ch}
+.styles{font:600 13px Manrope,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#8e8a84}
+.figs{position:absolute;right:28px;bottom:40px;display:flex;align-items:flex-end;gap:0}
+.figs canvas{display:block;width:170px;height:300px}
+#a{width:215px}#c{width:250px}
+iframe{position:absolute;width:400px;height:800px;left:-9999px}
+</style></head>
+<body>
+<div class="fg">
+  <div class="copy">
+    <div class="mark"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 9v14M23 9v14M5 12v8M27 12v8M9 16h14"/></svg>GymBro</div>
+    <div class="tag">Your trainer and nutritionist. No ads.</div>
+    <div class="styles">Gym · Home · Calisthenics</div>
+  </div>
+  <div class="figs"><canvas id="a"></canvas><canvas id="b"></canvas><canvas id="c"></canvas></div>
+</div>
+<iframe id="app" src="/www/index.html"></iframe>
+<script>
+// draw with the app's own renderer so the figures match the demos exactly
+document.getElementById("app").onload=function(){
+  const w=this.contentWindow, BY=w.eval("BYID"), figs=[["a","back-squat",.5,40],["b","pull-up",.5,25],["c","push-up",.35,60]];
+  setTimeout(()=>{ for(const [id,ex,ph,yaw] of figs){ const e=BY[ex]; w.draw(document.getElementById(id),e,e.rep*ph,yaw); } document.title="ready"; },300);
+};
+</script>
+</body></html>

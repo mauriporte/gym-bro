@@ -20,7 +20,7 @@ const dowName = (d,len="short") => new Date(2024,0,7+d).toLocaleDateString(S.lan
 
 /* ---------- native bridge (Capacitor) ---------- */
 const Cap = window.Capacitor, NATIVE = !!Cap?.isNativePlatform?.();
-const LN = NATIVE ? Cap.Plugins.LocalNotifications : null, GEO = NATIVE ? Cap.Plugins.Geolocation : null;
+const LN = NATIVE ? Cap.Plugins.LocalNotifications : null, GEO = NATIVE ? Cap.Plugins.Geolocation : null, APP = NATIVE ? Cap.Plugins.App : null;
 async function getPosition(ask){
   if(GEO){ const st=(ask?await GEO.requestPermissions():await GEO.checkPermissions()).location; if(st!=="granted") throw new Error("denied"); const p=await GEO.getCurrentPosition({enableHighAccuracy:true,timeout:15000}); return p.coords; }
   if(!navigator.geolocation) throw new Error("unsupported");
@@ -295,16 +295,17 @@ function anim(cv,ex){ live.set(cv,{ex,on:false}); io.observe(cv); }
 const reduce=matchMedia("(prefers-reduced-motion: reduce)");
 let modal=null, frame=0;
 function loop(ts){
+  requestAnimationFrame(loop); // scheduled first so one bad frame can never stop the animations
   if(frame++%60===0) readColors();
   const time=reduce.matches?0:ts/1000;
   for(const [cv,v] of live){ if(!cv.isConnected){ live.delete(cv); io.unobserve(cv); continue; } if(v.on) draw(cv,v.ex,time,40); }
   if(modal){
-    const mt=(ts-modal.t0)/1000, a=modal.view==="auto"?autoYaw(mt):{yaw:+modal.view,view:+modal.view};
+    // a frame can start just before the tap that opened the sheet, so clamp to 0
+    const mt=Math.max(0,(ts-modal.t0)/1000), a=modal.view==="auto"?autoYaw(mt):{yaw:+modal.view,view:+modal.view};
     draw(modal.cv,modal.ex,mt,a.yaw);
     $("#d-hud").textContent=tr(STR.views[a.view])+" · 0:"+String(Math.floor(mt%10)).padStart(2,"0")+" / 0:10";
     $("#d-prog").style.width=((mt%10)/10*100)+"%";
   }
-  requestAnimationFrame(loop);
 }
 
 /* ---------- views ---------- */
@@ -665,7 +666,7 @@ function openAdd(){
     if(c.inPlan) for(const o of S.custom) if(o.pat===c.pat) o.inPlan=false, addCustomToEX(o); // one custom per movement slot
     S.custom.push(c); addCustomToEX(c); save(); dlg.close(); renderAll(); scheduleReminders();
   };
-  dlg.showModal(); history.pushState({dlg:1},"");
+  dlg.showModal();
 }
 
 /* ---------- first-run setup ---------- */
@@ -714,7 +715,7 @@ async function obNav(dir){
   readObForm(); save();
   if(dir>0&&obStep===OB_STEPS.length-1){
     // no permission prompts here: reminders and location are switched on from Progress, the camera only when recording
-    Object.assign(S,{onboarded:true,planStart:today(),tab:"today"}); save(); showApp(); renderAll(); scheduleReminders();
+    Object.assign(S,{onboarded:true,planStart:today(),tab:"today"}); save(); showApp(); renderAll(); scrollTo(0,0); scheduleReminders();
     return;
   }
   obStep=Math.max(0,Math.min(OB_STEPS.length-1,obStep+dir)); renderOnboard();
@@ -745,7 +746,6 @@ function openEx(id){
   $("#d-remove").hidden=!ex.custom; $("#d-remove").textContent=tr(STR.removeEx); $("#d-remove").dataset.id=ex.id;
   modal={ex,cv:$("#d-canvas"),view:"auto",t0:performance.now()}; setView("auto");
   $("#dlg").showModal();
-  history.pushState({dlg:1},""); // Android back button pops this entry instead of exiting the app
 }
 function renderTarget(ex){
   const r=rx(ex,S.profile);
@@ -773,11 +773,15 @@ document.addEventListener("click",e=>{
   else setTab(el.id.slice(2));
 });
 $("#d-close").onclick=()=>$("#dlg").close();
-for(const id of ["#dlg","#add"]) $(id).addEventListener("close",()=>{
-  if(id==="#dlg") modal=null;
-  if(history.state?.dlg) history.back();
+$("#dlg").addEventListener("close",()=>modal=null);
+// Android back: close an open sheet, else step back in setup, else return to Today, else leave the app
+APP?.addListener("backButton",()=>{
+  const open=["#add","#dlg"].find(id=>$(id).open);
+  if(open) $(open).close();
+  else if(!S.onboarded&&obStep>0) obNav(-1);
+  else if(S.onboarded&&S.tab!=="today") setTab("today");
+  else APP.exitApp();
 });
-addEventListener("popstate",()=>{ for(const id of ["#dlg","#add"]) if($(id).open) $(id).close(); });
 $("#add").addEventListener("click",e=>{ if(e.target.id==="add"||e.target.closest("[data-close]")) $("#add").close(); });
 $("#d-remove").onclick=()=>{ const id=$("#d-remove").dataset.id; $("#dlg").close(); removeCustom(id); };
 $("#dlg").addEventListener("click",e=>{ if(e.target.id==="dlg") $("#dlg").close(); });

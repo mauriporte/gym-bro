@@ -3,3 +3,5 @@ node_modules/
 *.apk
 keystore/
 gym-bro.html
+marketing/store/screens/tmp-*
+marketing/footage/
