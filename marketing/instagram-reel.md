@@ -17,6 +17,20 @@
 | 8 | 21–24 s | A notification slides down: "No check-in yet. Today's Upper body session is waiting." (clip `08-reminder-banner.mp4`, banner from 5.5 s) | *Skip the gym? It notices.* | Drop on the beat |
 | 9 | 24–27 s | End card: the icon and "Dale". | *No ads. No paywall. No excuses.* / *Google Play* | Hold, fade out |
 
+## Recorded footage (`marketing/footage/`, not in git)
+
+| Shot | Clip | Notes |
+|---|---|---|
+| 2 | `02-setup.mp4` | Goal → build → experience → days → "Your plan is ready" |
+| 3 | `03-demo-squat.mp4` | Full 10 s camera turn |
+| 4 | `04-styles.mp4` | Gym → home → calisthenics → gym |
+| 5 | `05-log-sets.mp4` | Hint "Last 100 kg → today 102.5 kg", sets 1–4 fill in. Made with a fake past session, since removed from the phone |
+| 6 | `06-add-video.mp4` + `06b-video-demo.mp4` | Pick video → "Analysing… %" → "Movement: Squat" → saved → stick-figure demo. **Cut 0:05–0:20 of `06-add-video`: the phone's own video picker shows personal clips** |
+| 7 | `07-nutrition.mp4`, `07b-recipe.mp4` | Calorie and macro tiles, then a recipe |
+| 8 | `08-reminder-banner.mp4` | Banner slides in at 5.5 s |
+
+Shot 6 source video: "Man performing squats in gym with equipment" by khezez on Pexels (pexels.com/video/35585574), Pexels License: free to use, no attribution required. The face isn't visible.
+
 ## How to make it
 
 1. **App footage:** record straight from the phone with `adb shell screenrecord` (or the phone's own screen recorder) while tapping through each shot. That gives clean 1080×2400 clips with no person in frame. Crop to 9:16 in the editor.
