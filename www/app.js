@@ -31,18 +31,22 @@ async function notifyPermission(ask){
   if(!("Notification" in window)) return "unsupported";
   return ask?await Notification.requestPermission():Notification.permission;
 }
+// High-importance channel so a missed-session reminder pops up as a banner instead of landing silently in the shade.
+let channelReady=null;
+const reminderChannel=()=>channelReady||(channelReady=LN.createChannel({id:"reminders",name:tr(STR.reminders),importance:4,visibility:1,vibration:true}).catch(e=>console.warn("channel",e)));
 // Native: one-shot reminders for the next 8 weeks (well under Android's 500-alarm cap), rebuilt whenever check-ins or settings change.
 async function scheduleReminders(){
   if(!LN) return;
   try{
     if((await LN.checkPermissions()).display!=="granted") return;
+    await reminderChannel();
     const pend=await LN.getPending(); if(pend.notifications.length) await LN.cancel({notifications:pend.notifications.map(n=>({id:n.id}))});
     const [h,m]=S.remind.split(":").map(Number), list=[], now=Date.now();
     for(let i=0;i<56;i++){
       const d=new Date(); d.setDate(d.getDate()+i); d.setHours(h,m,0,0);
       const k=dateKey(d);
       if(!S.trainDays.includes(d.getDay())||S.checkins[k]||S.skips[k]||d.getTime()<=now) continue;
-      list.push({id:+k.replaceAll("-",""),title:tr(STR.nTitle),body:t(STR.nBody,{s:tr(sessionFor(d).day.title)}),schedule:{at:d,allowWhileIdle:true},smallIcon:"ic_stat_dale"});
+      list.push({id:+k.replaceAll("-",""),title:tr(STR.nTitle),body:t(STR.nBody,{s:tr(sessionFor(d).day.title)}),schedule:{at:d,allowWhileIdle:true},smallIcon:"ic_stat_dale",channelId:"reminders"});
     }
     if(list.length) await LN.schedule({notifications:list});
   }catch(e){ console.warn("reminders",e); }
@@ -507,7 +511,7 @@ async function renderProg(){
 async function notify(test){
   const body=test?tr(STR.nTest):t(STR.nBody,{s:tr(sessionFor(new Date()).day.title)});
   try{
-    if(LN){ if((await LN.checkPermissions()).display!=="granted") return false; await LN.schedule({notifications:[{id:1,title:tr(STR.nTitle),body,schedule:{at:new Date(Date.now()+1500)},smallIcon:"ic_stat_dale"}]}); return true; }
+    if(LN){ if((await LN.checkPermissions()).display!=="granted") return false; await reminderChannel(); await LN.schedule({notifications:[{id:1,title:tr(STR.nTitle),body,schedule:{at:new Date(Date.now()+1500)},smallIcon:"ic_stat_dale",channelId:"reminders"}]}); return true; }
     if("Notification" in window&&Notification.permission==="granted"){ new Notification(tr(STR.nTitle),{body,tag:"dale"}); return true; }
   }catch(e){ console.warn("notify",e); }
   return false;
