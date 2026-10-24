@@ -1,7 +1,7 @@
 {
-  "name": "gymbro",
+  "name": "gym-coach",
   "version": "1.0.0",
-  "description": "GymBro personal trainer app",
+  "description": "Dale: Gym Coach",
   "scripts": {
     "sync": "cap sync android",
     "serve": "python -m http.server 8080 --directory www"

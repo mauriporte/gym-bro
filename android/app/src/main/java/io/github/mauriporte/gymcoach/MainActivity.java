@@ -1,4 +1,4 @@
-package io.github.mauriporte.gymbro;
+package io.github.mauriporte.gymcoach;
 
 import com.getcapacitor.BridgeActivity;
 

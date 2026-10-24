@@ -1,17 +1,19 @@
-GymBro es un entrenador personal y nutricionista en tu bolsillo. Sin anuncios, sin cuentas, sin rastreo. Todo se queda en tu teléfono.
+¿Semanas levantando lo mismo? Tu registro ya sabe por qué.
+
+Dale es un entrenador personal y nutricionista en tu bolsillo. Sin anuncios, sin cuentas, sin rastreo. Todo se queda en tu teléfono.
 
 PLAN
 • Responde unas preguntas (objetivo, complexión, experiencia, días por semana) y obtén un plan de entrenamiento completo.
 • Cinco perfiles de entrenador: Hardgainer, Definición, Powerlifter, Recomposición y Motor.
 • Entrena en el gimnasio, en casa con mancuernas o con calistenia. Cambia cuando quieras.
-• Cada ejercicio indica "4 series de 8–12 repeticiones" y puedes ajustar series y repeticiones. GymBro lo recuerda.
+• Cada ejercicio indica "4 series de 8–12 repeticiones" y puedes ajustar series y repeticiones. Dale lo recuerda.
 
 EJERCICIOS
 • 30 ejercicios con demos en 3D que giran de vista lateral a 45° y frontal.
-• Añade los tuyos: descríbelo o graba un vídeo corto. GymBro lo compara con los ejercicios que conoce, lo ubica en el grupo muscular correcto y convierte tu vídeo en una demo de figuras de palitos.
+• Añade los tuyos: descríbelo o graba un vídeo corto. Dale lo compara con los ejercicios que conoce, lo ubica en el grupo muscular correcto y convierte tu vídeo en una demo de figuras de palitos.
 
 ENTRENADOR
-• Anota tus pesos y GymBro te sugiere la carga de la próxima sesión.
+• Anota tus pesos y Dale te sugiere la carga de la próxima sesión.
 • Valora cada sesión. Según tus dos últimas semanas, el entrenador sugiere una semana de descarga, menos días, subir de nivel o un bloque nuevo.
 
 NUTRICIÓN

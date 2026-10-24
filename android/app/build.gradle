@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "io.github.mauriporte.gymbro"
+    namespace = "io.github.mauriporte.gymcoach"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "io.github.mauriporte.gymbro"
+        applicationId "io.github.mauriporte.gymcoach"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode((System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger())
@@ -17,15 +17,15 @@ android {
         }
     }
     // Stable release key from CI secrets, so each new APK installs over the last one and keeps the user's data
-    def keystore = System.getenv("GYMBRO_KEYSTORE")
+    def keystore = System.getenv("DALE_KEYSTORE")
     signingConfigs {
         if (keystore) {
             release {
                 storeFile file(keystore)
                 storeType "pkcs12"
-                storePassword System.getenv("GYMBRO_KEYSTORE_PASSWORD")
-                keyAlias "gymbro"
-                keyPassword System.getenv("GYMBRO_KEYSTORE_PASSWORD")
+                storePassword System.getenv("DALE_KEYSTORE_PASSWORD")
+                keyAlias "dale"
+                keyPassword System.getenv("DALE_KEYSTORE_PASSWORD")
             }
         }
     }

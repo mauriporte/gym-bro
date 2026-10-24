@@ -35,7 +35,7 @@ const STR = {
   thisMonth:["This month","Este mes"], setsLogged:["sets logged","series registradas"],
   attendance:["Attendance, last 16 weeks","Asistencia, últimas 16 semanas"], heatKey:["Mon–Sun, top to bottom.","Lun–Dom, de arriba a abajo."], ckd:["checked in","asistencia"], tenSets:["10+ sets","10+ series"],
   reminders:["Gym reminders","Recordatorios"],
-  remindInfo:["On training days GymBro schedules a reminder for your chosen time. Log a set, tap Check in, or open the app within 150 m of your saved gym and that day's reminder is cancelled.","En los días de entreno GymBro programa un recordatorio a la hora que elijas. Registra una serie, pulsa Registrar asistencia o abre la app a menos de 150 m de tu gimnasio guardado y se cancela el recordatorio de ese día."],
+  remindInfo:["On training days Dale schedules a reminder for your chosen time. Log a set, tap Check in, or open the app within 150 m of your saved gym and that day's reminder is cancelled.","En los días de entreno Dale programa un recordatorio a la hora que elijas. Registra una serie, pulsa Registrar asistencia o abre la app a menos de 150 m de tu gimnasio guardado y se cancela el recordatorio de ese día."],
   trainDays:["Training days","Días de entreno"], remindBy:["Remind me if I'm not there by","Avísame si no he ido a las"],
   notifOn:["Reminders on","Recordatorios activados"], notifTurnOn:["Turn on reminders","Activar recordatorios"],
   gymSave:["Save my gym location","Guardar ubicación del gimnasio"], gymUpdate:["Update gym location","Actualizar ubicación del gimnasio"], testN:["Send a test reminder","Enviar recordatorio de prueba"],
@@ -43,10 +43,10 @@ const STR = {
   nUnsupported:["This device can't show notifications. Reminders appear as a banner on the Today tab.","Este dispositivo no puede mostrar notificaciones. Los recordatorios aparecen como aviso en Hoy."],
   nGranted:["Reminders are on.","Recordatorios activados."], nBlocked:["Notifications are blocked, so reminders show as a banner on the Today tab.","Las notificaciones están bloqueadas; los recordatorios aparecerán como aviso en Hoy."],
   locNone:["Location isn't available on this device.","La ubicación no está disponible en este dispositivo."], locFinding:["Finding you…","Buscando tu ubicación…"],
-  locSaved:["Gym saved. Open GymBro when you arrive and you're checked in automatically.","Gimnasio guardado. Abre GymBro al llegar y tu asistencia se registra sola."],
+  locSaved:["Gym saved. Open Dale when you arrive and you're checked in automatically.","Gimnasio guardado. Abre Dale al llegar y tu asistencia se registra sola."],
   locBlocked:["Location was blocked. Use Check in on the Today tab instead.","Ubicación bloqueada. Usa Registrar asistencia en Hoy."],
   testSent:["Test reminder sent.","Recordatorio de prueba enviado."],
-  nTitle:["GymBro","GymBro"], nBody:["No check-in yet. Today's {s} session is waiting.","Aún no has registrado asistencia. Tu sesión de {s} te espera."],
+  nTitle:["Dale","Dale"], nBody:["No check-in yet. Today's {s} session is waiting.","Aún no has registrado asistencia. Tu sesión de {s} te espera."],
   nTest:["This is what a missed-session reminder looks like.","Así se ve un recordatorio de sesión perdida."],
   // nutrition
   nutrition:["Nutrition","Nutrición"], yourBody:["Your body","Tus datos"], sex:["Sex","Sexo"], male:["Male","Hombre"], female:["Female","Mujer"],
@@ -288,12 +288,12 @@ const SLOTS = [["breakfast",.25],["lunch",.35],["snack",.15],["dinner",.25]];
 
 /* ---------- onboarding + coach ---------- */
 Object.assign(STR, {
-  obWelcome:["Your personal trainer and nutritionist. Answer a few quick questions and GymBro builds your plan.","Tu entrenador personal y nutricionista. Responde unas preguntas rápidas y GymBro arma tu plan."],
+  obWelcome:["Your personal trainer and nutritionist. Answer a few quick questions and Dale builds your plan.","Tu entrenador personal y nutricionista. Responde unas preguntas rápidas y Dale arma tu plan."],
   obGoal:["What's your goal?","¿Cuál es tu objetivo?"], obBuild:["How would you describe your build?","¿Cómo describirías tu complexión?"],
   obExp:["How long have you been training?","¿Cuánto tiempo llevas entrenando?"], obWhere:["Where do you train?","¿Dónde entrenas?"],
   obDays:["How many days a week?","¿Cuántos días a la semana?"], obWhich:["Which days?","¿Qué días?"],
   obBody:["A few numbers for your nutrition","Unos datos para tu nutrición"], obBodyNote:["Used only to work out calories and macros. They stay on your phone.","Solo se usan para calcular calorías y macros. Se quedan en tu teléfono."],
-  obReady:["Your plan is ready","Tu plan está listo"], obReadyNote:["You can change any of this later in My plan. GymBro adjusts the plan as you log sessions.","Puedes cambiar todo esto más tarde en Mi plan. GymBro ajusta el plan a medida que registras sesiones."],
+  obReady:["Your plan is ready","Tu plan está listo"], obReadyNote:["You can change any of this later in My plan. Dale adjusts the plan as you log sessions.","Puedes cambiar todo esto más tarde en Mi plan. Dale ajusta el plan a medida que registras sesiones."],
   obNext:["Continue","Continuar"], obBack:["Back","Atrás"], obStart:["Start training","Empezar a entrenar"], obStep:["Step {a} of {b}","Paso {a} de {b}"],
   redo:["Redo setup","Repetir configuración"], coach:["Coach","Entrenador"], upGame:["Up the game","Subir el nivel"],
   coachStatus:["Week {w} of this block · {pct} attendance over the last 2 weeks.","Semana {w} de este bloque · {pct} de asistencia en las últimas 2 semanas."],
@@ -325,7 +325,7 @@ const GOAL_DESC = {
 const ROTATE = {muscle:"strength",strength:"muscle",fatloss:"tone",tone:"muscle",endurance:"fatloss"};
 Object.assign(STR, {
   addExercise:["+ Add exercise","+ Añadir ejercicio"], addTitle:["Add an exercise","Añadir un ejercicio"],
-  addIntro:["Describe it, record a short video of one or two reps, or both. GymBro compares it with the exercises it knows to place it in the right muscle group. A video is turned into a stick-figure demo, and the video itself isn't kept.","Descríbelo, graba un vídeo corto de una o dos repeticiones, o ambas cosas. GymBro lo compara con los ejercicios que conoce para ubicarlo en el grupo muscular correcto. El vídeo se convierte en una demo de figuras de palitos y no se guarda."],
+  addIntro:["Describe it, record a short video of one or two reps, or both. Dale compares it with the exercises it knows to place it in the right muscle group. A video is turned into a stick-figure demo, and the video itself isn't kept.","Descríbelo, graba un vídeo corto de una o dos repeticiones, o ambas cosas. Dale lo compara con los ejercicios que conoce para ubicarlo en el grupo muscular correcto. El vídeo se convierte en una demo de figuras de palitos y no se guarda."],
   addName:["Name","Nombre"], addDesc:["How it's done","Cómo se hace"], addDescPh:["e.g. Cable fly: stand between two pulleys and bring the handles together in front of your chest.","p. ej. Aperturas en polea: de pie entre dos poleas, junta los agarres delante del pecho."],
   addRecord:["Record video","Grabar vídeo"], addPick:["Choose video","Elegir vídeo"], addCompare:["Compare with known exercises","Comparar con ejercicios conocidos"],
   addGroup:["Movement","Movimiento"], addLike:["Closest known exercise","Ejercicio conocido más parecido"], addWhere:["Where","Dónde"], addBoth:["Gym and home","Gimnasio y casa"], addType:["Measured in","Se mide en"],

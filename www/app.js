@@ -7,8 +7,8 @@ const DEF_STATE = {lang:(navigator.language||"en").startsWith("es")?"es":"en", m
   trainDays:[1,2,4,5], remind:"18:00", gym:null, log:{}, checkins:{}, skips:{}, notified:"", tab:"today",
   onboarded:false, planStart:dateKey(new Date()), feedback:{}, kg:{}, coachSnooze:{}, deloadUntil:"", custom:[], adjust:{}};
 let S = structuredClone(DEF_STATE);
-try{ const l=JSON.parse(localStorage.getItem("gymbro")||"null"); if(l) S={...S,...l,profile:{...S.profile,...l.profile},body:{...S.body,...l.body}}; }catch{}
-function save(){ try{ localStorage.setItem("gymbro",JSON.stringify(S)); }catch{} }
+try{ const l=JSON.parse(localStorage.getItem("dale")||"null"); if(l) S={...S,...l,profile:{...S.profile,...l.profile},body:{...S.body,...l.body}}; }catch{}
+function save(){ try{ localStorage.setItem("dale",JSON.stringify(S)); }catch{} }
 
 /* ---------- i18n ---------- */
 const tr = v => v[S.lang==="es"?1:0];
@@ -42,7 +42,7 @@ async function scheduleReminders(){
       const d=new Date(); d.setDate(d.getDate()+i); d.setHours(h,m,0,0);
       const k=dateKey(d);
       if(!S.trainDays.includes(d.getDay())||S.checkins[k]||S.skips[k]||d.getTime()<=now) continue;
-      list.push({id:+k.replaceAll("-",""),title:tr(STR.nTitle),body:t(STR.nBody,{s:tr(sessionFor(d).day.title)}),schedule:{at:d,allowWhileIdle:true},smallIcon:"ic_stat_gymbro"});
+      list.push({id:+k.replaceAll("-",""),title:tr(STR.nTitle),body:t(STR.nBody,{s:tr(sessionFor(d).day.title)}),schedule:{at:d,allowWhileIdle:true},smallIcon:"ic_stat_dale"});
     }
     if(list.length) await LN.schedule({notifications:list});
   }catch(e){ console.warn("reminders",e); }
@@ -507,8 +507,8 @@ async function renderProg(){
 async function notify(test){
   const body=test?tr(STR.nTest):t(STR.nBody,{s:tr(sessionFor(new Date()).day.title)});
   try{
-    if(LN){ if((await LN.checkPermissions()).display!=="granted") return false; await LN.schedule({notifications:[{id:1,title:tr(STR.nTitle),body,schedule:{at:new Date(Date.now()+1500)},smallIcon:"ic_stat_gymbro"}]}); return true; }
-    if("Notification" in window&&Notification.permission==="granted"){ new Notification(tr(STR.nTitle),{body,tag:"gymbro"}); return true; }
+    if(LN){ if((await LN.checkPermissions()).display!=="granted") return false; await LN.schedule({notifications:[{id:1,title:tr(STR.nTitle),body,schedule:{at:new Date(Date.now()+1500)},smallIcon:"ic_stat_dale"}]}); return true; }
+    if("Notification" in window&&Notification.permission==="granted"){ new Notification(tr(STR.nTitle),{body,tag:"dale"}); return true; }
   }catch(e){ console.warn("notify",e); }
   return false;
 }
@@ -678,7 +678,7 @@ function renderOnboard(){
   const cards=(key,obj,cur,sub)=>`<div class="choices">${Object.entries(obj).map(([k,v])=>`<button class="preset" data-ob="${key}" data-v="${k}" aria-pressed="${cur===k}"><b>${esc(tr(v.name))}</b>${sub?`<span class="muted">${esc(sub(k,v))}</span>`:""}</button>`).join("")}</div>`;
   const b=S.body, p=plan(), n=nutrition(true);
   const body={
-    welcome:`<div class="logo ob-logo"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 9v14M23 9v14M5 12v8M27 12v8M9 16h14"/></svg>GymBro</div>
+    welcome:`<div class="logo ob-logo"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 9v14M23 9v14M5 12v8M27 12v8M9 16h14"/></svg>Dale</div>
       <p class="lead">${tr(STR.obWelcome)}</p>
       <div class="seg" role="group" aria-label="Language / Idioma" style="align-self:flex-start"><button data-lang="en" aria-pressed="${S.lang==="en"}">English</button><button data-lang="es" aria-pressed="${S.lang==="es"}">Español</button></div>`,
     goal:`<h2>${tr(STR.obGoal)}</h2>${cards("goal",GOALS,pr.goal,k=>tr(GOAL_DESC[k]))}`,
