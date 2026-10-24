@@ -14,7 +14,7 @@
 | 5 | 12–15 s | Log sets 1-2-3-4, then the hint "Last 100 kg → today 105 kg". | *Log your sets. It tells you what to change.* | Zoom in on the hint |
 | 6 | 15–18 s | Add exercise: pick a video, "Analysing… 64%", then the stick figure appears doing the move. | *Film any exercise. It becomes a demo.* | Match-cut from progress bar to figure |
 | 7 | 18–21 s | Nutrition: the calorie and macro tiles, then a recipe opens. | *Calories. Macros. Recipes.* | Numbers count up |
-| 8 | 21–24 s | A notification slides down: "No check-in yet. Today's Push session is waiting." | *Skip the gym? It notices.* | Drop on the beat |
+| 8 | 21–24 s | A notification slides down: "No check-in yet. Today's Upper body session is waiting." (clip `08-reminder-banner.mp4`, banner from 5.5 s) | *Skip the gym? It notices.* | Drop on the beat |
 | 9 | 24–27 s | End card: the icon and "Dale". | *No ads. No paywall. No excuses.* / *Google Play* | Hold, fade out |
 
 ## How to make it
