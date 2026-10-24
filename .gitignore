@@ -5,3 +5,5 @@ keystore/
 dale.html
 marketing/store/screens/tmp-*
 marketing/footage/
+marketing/reel/build/
+marketing/reel/*.mp4
