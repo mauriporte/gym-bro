@@ -11,8 +11,8 @@ function Peek { cmd /c "adb -s $Dev exec-out screencap -p > `"$env:TEMP\gb-peek.
 # Records the screen while $script (on-device shell: "sleep 2; input tap X Y; ...") runs in the same
 # shell, so tap timing is exact; then pulls the clip into marketing/footage.
 function Rec([string]$name, [int]$secs, [string]$script) {
-  $remote = "/sdcard/gb-$name.mp4"; $dir = Join-Path $PSScriptRoot "..\footage"
-  New-Item -ItemType Directory -Force $dir | Out-Null
+  $remote = "/sdcard/gb-$($name -replace '[\\/]','-').mp4"; $dir = Join-Path $PSScriptRoot "..\footage"
+  New-Item -ItemType Directory -Force (Split-Path (Join-Path $dir "$name.mp4")) | Out-Null
   adb -s $Dev shell "screenrecord --time-limit $secs --bit-rate 12000000 $remote & $script; wait" | Out-Null
   Start-Sleep 1; adb -s $Dev pull $remote (Join-Path $dir "$name.mp4") | Out-Null; adb -s $Dev shell rm $remote
   Get-Item (Join-Path $dir "$name.mp4")

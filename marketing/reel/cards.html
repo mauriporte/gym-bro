@@ -25,14 +25,16 @@ const ease=x=>x<=0?0:x>=1?1:1-Math.pow(1-x,3), seg=(a,b)=>ease((t-a)/(b-a));
 const icon=`<svg class="icon" viewBox="0 0 32 32"><path d="M9 9v14M23 9v14M5 12v8M27 12v8M9 16h14"/></svg>`;
 if(card==="title"){
   // 0–0.9 s the dumbbell draws itself, 0.6–1.4 s "Dale" rises in, 1.2–1.9 s the line fades in
-  document.body.innerHTML=`<div class="card">${icon}<div class="mark">Dale</div><div class="line">Your trainer.<br>In your pocket.</div></div>`;
+  const clean=s=>s.replace(/[<>&]/g,"").replace(/\|/g,"<br>");
+  document.body.innerHTML=`<div class="card">${icon}<div class="mark">Dale</div><div class="line">${clean(q.get("line")||"Your trainer.|In your pocket.")}</div></div>`;
   // dashes restart on every subpath, so each stroke of the dumbbell is its own path, drawn in turn
   const strokes=[["M9 9v14",14],["M23 9v14",14],["M5 12v8",8],["M27 12v8",8],["M9 16h14",14]];
   document.querySelector(".icon").innerHTML=strokes.map(([d,len],i)=>{ const k=seg(i*.14,i*.14+.34); return `<path d="${d}" stroke-dasharray="${len} ${len}" stroke-dashoffset="${len*(1-k)}" opacity="${k>0?1:0}"/>`; }).join("");
   const m=document.querySelector(".mark"); m.style.opacity=seg(.6,1.4); m.style.transform=`translateY(${(1-seg(.6,1.4))*40}px)`;
   document.querySelector(".line").style.opacity=seg(1.2,1.9);
 }else if(card==="end"){
-  document.body.innerHTML=`<div class="card end">${icon}<div class="mark">Dale</div><div class="big">No ads. No paywall.<br>No excuses.</div><div class="small">${q.get("sub")||"Coming soon to Google Play"}</div></div>`;
+  const clean=s=>s.replace(/[<>&]/g,"").replace(/\|/g,"<br>");
+  document.body.innerHTML=`<div class="card end">${icon}<div class="mark">Dale</div><div class="big">${clean(q.get("big")||"No ads. No paywall.|No excuses.")}</div><div class="small">${clean(q.get("sub")||"Coming soon to Google Play")}</div></div>`;
 }else if(card==="overlay"){
   document.body.innerHTML=`<div class="overlay"><p>${(q.get("text")||"").replace(/[<>&]/g,"")}</p></div>`;
 }
