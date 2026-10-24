@@ -563,27 +563,55 @@ function poseFeatures(frames){
 function knownFeatures(ex){ prep(ex); return ex._feat||(ex._feat=poseFeatures([0,.125,.25,.375,.5,.625,.75,.875,1].map(f=>fk(ex,lerpPose(ex,f))))); }
 const W8=[2,2,1,1,1,1,1,1,1,1];
 const featDist=(a,b)=>Math.sqrt(a.reduce((s,v,i)=>s+W8[i]*(v-b[i])**2,0));
+// 3D joint angles are unreliable when the bend points at the camera (a squat filmed from behind), so the main
+// signal is image-space: how upright the body is, how far the hips drop, where the hands sit, plus each one's range.
+// Frames are {sh,hp,ft,hd,hdL,hdR} as [x,y] with y up.
+function imageFeatures(F){
+  const d2=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]), S=Math.max(...F.map(f=>d2(f.sh,f.ft)))||1;
+  const rows=F.map(f=>[(f.sh[1]-f.ft[1])/(d2(f.sh,f.ft)||1)*100,(f.hp[1]-f.ft[1])/S*100,(f.hd[1]-f.sh[1])/S*100,Math.abs(f.hdL[0]-f.hdR[0])/S*100]);
+  const span=rows[0].map((_,i)=>{ const v=rows.map(r=>r[i]).sort((a,b)=>a-b); return [v[Math.floor(v.length*.1)],v[Math.floor(v.length*.9)]]; });
+  return [...span.flat(),...span.map(([lo,hi])=>2*(hi-lo))];
+}
+function project2d(J,yaw){
+  const c=Math.cos(yaw*D),s=Math.sin(yaw*D),P=p=>[p[0]*c-p[2]*s,p[1]],m=(a,b)=>[(P(a)[0]+P(b)[0])/2,(P(a)[1]+P(b)[1])/2];
+  return {sh:m(J.shL,J.shR),hp:m(J.hpL,J.hpR),ft:m(J.ftL,J.ftR),hd:m(J.hdL,J.hdR),hdL:P(J.hdL),hdR:P(J.hdR)};
+}
+// known exercises seen from the front and the side; a clip is compared with whichever view is closer
+function knownImageFeatures(ex){ prep(ex); if(!ex._feat2){ const fr=[0,.125,.25,.375,.5,.625,.75,.875,1].map(f=>fk(ex,lerpPose(ex,f))); ex._feat2=[0,90].map(y=>imageFeatures(fr.map(J=>project2d(J,y)))); } return ex._feat2; }
+const imageDist=(a,b)=>Math.sqrt(a.reduce((s,v,i)=>s+(v-b[i])**2,0));
+// w3: how much to trust 3D joint angles. Filmed from the side the bends cross the image and 3D is reliable (0.5);
+// from the front or back they point at the camera and it isn't (0.1).
+const poseScore=(f2,f3,ex,w3)=>Math.min(...knownImageFeatures(ex).map(k=>imageDist(f2,k)))+w3*featDist(f3,knownFeatures(ex));
 const MP="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35";
 let poseLM=null;
 async function poseModel(){
   if(poseLM) return poseLM;
   const v=await import(MP+"/vision_bundle.mjs"), fs=await v.FilesetResolver.forVisionTasks(MP+"/wasm");
-  return poseLM=await v.PoseLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task"},runningMode:"VIDEO",numPoses:1});
+  return poseLM=await v.PoseLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task"},runningMode:"IMAGE",numPoses:1}); // each sampled frame stands alone, so one clip can't leak into the next
+
 }
 async function matchVideo(blob,onProgress){
   const lm=await poseModel(), vid=document.createElement("video"), url=URL.createObjectURL(blob);
   vid.muted=true; vid.playsInline=true; vid.src=url;
   try{
     await new Promise((ok,no)=>{ vid.onloadeddata=ok; vid.onerror=()=>no(new Error("video")); });
-    const end=Math.min(vid.duration||0,15), frames=[];
-    for(let tm=.05,n=0;tm<end;tm+=MOTION_DT,n++){
+    const end=Math.min(vid.duration||0,15), frames=[], flat=[], W=vid.videoWidth, H=vid.videoHeight;
+    for(let tm=.05;tm<end;tm+=MOTION_DT){
       vid.currentTime=tm; await new Promise(ok=>vid.onseeked=ok);
-      const w=lm.detectForVideo(vid,Math.round(n*MOTION_DT*1000)+1).worldLandmarks?.[0]; onProgress?.(tm/end);
-      if(w) frames.push(rigFromLandmarks(w));
+      const res=lm.detect(vid), w=res.worldLandmarks?.[0], L=res.landmarks?.[0]; onProgress?.(tm/end);
+      if(!w||!L) continue;
+      const p=i=>[L[i].x*W,-L[i].y*H], m=(a,b)=>[(p(a)[0]+p(b)[0])/2,(p(a)[1]+p(b)[1])/2];
+      frames.push(rigFromLandmarks(w)); flat.push({sh:m(11,12),hp:m(23,24),ft:m(27,28),hd:m(15,16),hdL:p(15),hdR:p(16),shW:Math.abs(p(11)[0]-p(12)[0])});
     }
     if(frames.length<5) throw new Error("nopose");
-    const f=poseFeatures(frames);
-    return {matches:EX.filter(x=>!x.custom).map(x=>({x,d:featDist(f,knownFeatures(x))})).sort((a,b)=>a.d-b.d).slice(0,3).map(m=>m.x), motion:toMotion(frames)};
+    // shoulders look narrow (relative to body height) when filmed from the side
+    const S=Math.max(...flat.map(f=>Math.hypot(f.sh[0]-f.ft[0],f.sh[1]-f.ft[1])))||1, shW=flat.map(f=>f.shW/S).sort((a,b)=>a-b)[flat.length>>1];
+    const f2=imageFeatures(flat), f3=poseFeatures(frames), w3=shW<.12?.5:.1;
+    const top=EX.filter(x=>!x.custom).map(x=>({x,d:poseScore(f2,f3,x,w3)})).sort((a,b)=>a.d-b.d).slice(0,3).map(m=>m.x);
+    // movement type by majority of the top 3, so one look-alike can't decide it alone
+    const votes={}; top.forEach(x=>{ votes[x.pat[0]]=(votes[x.pat[0]]||0)+1; });
+    const pat=top.map(x=>x.pat[0]).sort((a,b)=>votes[b]-votes[a])[0]; // stable sort: ties go to the best-ranked
+    return {matches:[...top.filter(x=>x.pat.includes(pat)),...top.filter(x=>!x.pat.includes(pat))], pat, motion:toMotion(frames)};
   } finally { URL.revokeObjectURL(url); }
 }
 /* video → stick-figure motion: landmarks mapped onto the demo rig, smoothed, turned to face +z and stood on the floor */
@@ -645,18 +673,18 @@ function openAdd(){
   </form>`;
   const st=m=>$("#a-status").textContent=m;
   $("#a-pat").value="core"; $("#a-like").value="plank"; $("#a-mode").value=S.mode;
-  const onVideo=e=>{ const f=e.target.files?.[0]; if(!f) return; if(f.size>200e6) return st(tr(STR.addTooBig)); Object.assign(addState,{blob:f,motion:null,tried:false}); const v=$("#a-video"); v.src=URL.createObjectURL(f); v.hidden=false; v.play().catch(()=>{}); st(tr(STR.addVideoReady)); };
+  const onVideo=e=>{ const f=e.target.files?.[0]; if(!f) return; if(f.size>200e6) return st(tr(STR.addTooBig)); Object.assign(addState,{blob:f,motion:null,pat:null,tried:false}); const v=$("#a-video"); v.src=URL.createObjectURL(f); v.hidden=false; v.play().catch(()=>{}); st(tr(STR.addVideoReady)); };
   $("#a-rec").onchange=onVideo; $("#a-pick").onchange=onVideo;
   const compare=async()=>{
     const txt=$("#a-name").value+" "+$("#a-desc").value, m=matchText(txt);
     let matches=m.matches, via="text", warn="";
     if(addState.blob){
       st(tr(STR.addAnalyzing)); addState.tried=true;
-      try{ const r=await matchVideo(addState.blob,p=>st(tr(STR.addAnalyzing)+" "+Math.round(p*100)+"%")); matches=r.matches; addState.motion=r.motion; via="video"; }
+      try{ const r=await matchVideo(addState.blob,p=>st(tr(STR.addAnalyzing)+" "+Math.round(p*100)+"%")); matches=r.matches; addState.motion=r.motion; addState.pat=r.pat; via="video"; }
       catch(e){ warn=tr(e.message==="nopose"?STR.addNoPose:STR.addOffline)+" "; console.warn("pose",e); }
     }
     if(!matches.length&&!m.pat) return st(warn+tr(STR.addNoMatch));
-    const pat=m.pat||matches[0].pat[0];
+    const pat=m.pat||(via==="video"&&addState.pat)||matches[0].pat[0];
     $("#a-pat").value=pat; if(matches[0]) $("#a-like").value=matches[0].id; if(m.mode) $("#a-mode").value=m.mode;
     if(matches[0]?.timed) $("#a-type").value="time";
     st(warn+t(via==="video"?STR.addResultVideo:STR.addResult,{x:matches.map(x=>tr(x.name)).join(", ")||"—",g:tr(PAT_NAME[pat])}));
